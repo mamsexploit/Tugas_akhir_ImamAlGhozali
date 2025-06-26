@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exposure Time Calculator</title>
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1d2b64, #f8cdda);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        .btn-primary {
+            background-color: #ff7eb3;
+            border: none;
+        }
+        .btn-primary:hover {
+            background-color: #ff5277;
+        }
+        /* --- Tambahan untuk language switcher --- */
+        .lang-switcher .btn {
+            background: #fffbe6 !important;
+            color: #333 !important;
+            border: 2px solid #ffd700 !important;
+            font-weight: bold;
+            box-shadow: 0 2px 8px #ffd70055;
+            transition: background 0.2s, color 0.2s;
+        }
+        .lang-switcher .btn.active,
+        .lang-switcher .btn:focus,
+        .lang-switcher .btn:hover {
+            background: #ffe066 !important;
+            color: #222 !important;
+            border-color: #ffb700 !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Language Switcher -->
+    <div style="position: fixed; top: 20px; right: 30px; z-index: 9999;">
+        <div class="btn-group lang-switcher">
+            <button id="lang-id" class="btn btn-sm btn-outline-primary">ID</button>
+            <button id="lang-en" class="btn btn-sm btn-outline-secondary">EN</button>
+        </div>
+    </div>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card p-4">
+                    <h2 class="text-center text-dark">Exposure Time & SNR Calculator</h2>
+                    
+                    <!-- Calculator Type Selection -->
+                    <div class="btn-group w-100 mb-4" role="group">
+                        <input type="radio" class="btn-check" name="calc-type" id="exp-time" checked>
+                        <label class="btn btn-outline-primary" for="exp-time">Calculate Exposure Time</label>
+                        
+                        <input type="radio" class="btn-check" name="calc-type" id="snr">
+                        <label class="btn btn-outline-primary" for="snr">Calculate SNR</label>
+                    </div>
+
+                    <!-- Combined Form -->
+                    <form id="calculator-form" class="mb-4">
+                        <div class="mb-3">
+                            <label for="telescope" class="form-label lang" data-key="telescope">Telescope:</label>
+                            <select name="telescope" id="telescope" class="form-select" required
+                                data-bs-toggle="tooltip" data-bs-placement="right"
+                                title="Pilih teleskop yang digunakan (Diameter utama teleskop)">
+                                {% for name in telescopes %}
+                                    <option value="{{ name }}">{{ name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="ccd" class="form-label lang" data-key="ccd">CCD:</label>
+                            <select name="ccd" id="ccd" class="form-select" required
+                                data-bs-toggle="tooltip" data-bs-placement="right"
+                                title="Pilih kamera CCD yang digunakan (Jenis detektor)">
+                                {% for name in ccds %}
+                                    <option value="{{ name }}">{{ name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3 exp-time-field">
+                            <label for="snr" class="form-label lang" data-key="snr">Desired SNR:</label>
+                            <input type="number" step="0.1" name="snr" id="snr-input" class="form-control"
+                                data-bs-toggle="tooltip" data-bs-placement="right"
+                                title="Signal-to-Noise Ratio yang diinginkan (Rasio sinyal terhadap *Noisenya)">
+                        </div>
+                        <div class="mb-3 snr-field" style="display: none;">
+                            <label for="exposure_time" class="form-label lang" data-key="exposure_time">Exposure Time (seconds):</label>
+                            <input type="number" step="0.1" name="exposure_time" id="exposure-time-input" class="form-control"
+                                data-bs-toggle="tooltip" data-bs-placement="right"
+                                title="Lama waktu eksposur dalam detik (Durasi pengambilan gambar)">
+                        </div>
+                        <div class="mb-3">
+                            <label for="magnitude" class="form-label lang" data-key="magnitude">Star Magnitude:</label>
+                            <input type="number" step="0.1" name="magnitude" id="magnitude" class="form-control" required
+                                data-bs-toggle="tooltip" data-bs-placement="right"
+                                title="Magnitudo bintang yang diamati (Tingkat kecerlangan bintang)">
+                        </div>
+                        <div class="mb-3">
+                            <label for="filter" class="form-label lang" data-key="filter">Filter:</label>
+                            <select name="filter" id="filter" class="form-select" required
+                                data-bs-toggle="tooltip" data-bs-placement="right"
+                                title="Filter optik yang digunakan (Jenis filter pengamatan)">
+                                {% for filter in filters %}
+                                    <option value="{{ filter }}">{{ filter }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="sky_brightness" class="form-label lang" data-key="sky_brightness">Sky Brightness (mag/arcsec²):</label>
+                            <input type="number" step="0.1" name="sky_brightness" id="sky_brightness" class="form-control" required
+                                data-bs-toggle="tooltip" data-bs-placement="right"
+                                title="Kecerlangan langit malam dalam magnitudo per arcsec² (Tingkat terang langit)">
+                        </div>
+                        <div class="mb-3">
+                            <label for="zenith_distance" class="form-label lang" data-key="zenith_distance">Zenith Distance (degrees):</label>
+                            <input type="number" step="0.1" name="zenith_distance" id="zenith_distance" class="form-control" required
+                                data-bs-toggle="tooltip" data-bs-placement="right"
+                                title="Jarak sudut dari zenit ke objek (Sudut antara zenit dan objek)">
+                        </div>
+                        <div class="mb-3">
+                            <label for="fwhm" class="form-label lang" data-key="fwhm">FWHM (pixels):</label>
+                            <input type="number" step="0.1" name="fwhm" id="fwhm" class="form-control" required
+                                data-bs-toggle="tooltip" data-bs-placement="right"
+                                title="Full Width at Half Maximum dari bintang dalam satuan piksel (Ukuran citra bintang)">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 lang" data-key="calculate">Calculate</button>
+                    </form>
+
+                    <!-- Results Section -->
+                    <div id="results" style="display: none;">
+                        <div class="card mt-4">
+                            <div class="card-header bg-success text-white">
+                                <h3 class="card-title mb-0">Results</h3>
+                            </div>
+                            <div class="card-body">
+                                <div id="result-content"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add JavaScript for form handling -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const expTimeRadio = document.getElementById('exp-time');
+            const snrRadio = document.getElementById('snr');
+            const expTimeFields = document.getElementsByClassName('exp-time-field');
+            const snrFields = document.getElementsByClassName('snr-field');
+            const form = document.getElementById('calculator-form');
+
+            function toggleFields() {
+                const isExpTime = expTimeRadio.checked;
+                Array.from(expTimeFields).forEach(field => field.style.display = isExpTime ? 'block' : 'none');
+                Array.from(snrFields).forEach(field => field.style.display = isExpTime ? 'none' : 'block');
+            }
+
+            expTimeRadio.addEventListener('change', toggleFields);
+            snrRadio.addEventListener('change', toggleFields);
+
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const formData = new FormData(form);
+                const endpoint = expTimeRadio.checked ? '/calculate_exposure' : '/calculate_snr';
+
+                try {
+                    const response = await fetch(endpoint, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const result = await response.text();
+                    document.getElementById('result-content').innerHTML = result;
+                    document.getElementById('results').style.display = 'block';
+                } catch (error) {
+                    console.error('Error:', error);
+                }
+            });
+        });
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Tooltip Bootstrap
+        document.addEventListener('DOMContentLoaded', function() {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+
+            // Fitur Pengubah bahasa
+            const translations = {
+                id: {
+                    "telescope": "Teleskop:",
+                    "ccd": "CCD:",
+                    "snr": "SNR yang diinginkan:",
+                    "exposure_time": "Waktu Eksposur (detik):",
+                    "magnitude": "Magnitudo Bintang:",
+                    "filter": "Filter:",
+                    "sky_brightness": "Kecerlangan Langit (mag/arcsec²):",
+                    "zenith_distance": "Jarak Zenith (derajat):",
+                    "fwhm": "FWHM (piksel):",
+                    "calculate": "Hitung"
+                },
+                en: {
+                    "telescope": "Telescope:",
+                    "ccd": "CCD:",
+                    "snr": "Desired SNR:",
+                    "exposure_time": "Exposure Time (seconds):",
+                    "magnitude": "Star Magnitude:",
+                    "filter": "Filter:",
+                    "sky_brightness": "Sky Brightness (mag/arcsec²):",
+                    "zenith_distance": "Zenith Distance (degrees):",
+                    "fwhm": "FWHM (pixels):",
+                    "calculate": "Calculate"
+                }
+            };
+
+            function setLanguage(lang) {
+                document.querySelectorAll('.lang').forEach(function(el) {
+                    const key = el.getAttribute('data-key');
+                    if (translations[lang][key]) {
+                        el.textContent = translations[lang][key];
+                    }
+                });
+                // Ganti tooltip
+                document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function(el) {
+                    let titles = {
+                        "telescope": {
+                            id: "Pilih teleskop yang digunakan (Diameter utama teleskop)",
+                            en: "Select the telescope used (Main mirror diameter)"
+                        },
+                        "ccd": {
+                            id: "Pilih kamera CCD yang digunakan (Jenis detektor)",
+                            en: "Select the CCD camera used (Detector type)"
+                        },
+                        "snr-input": {
+                            id: "Signal-to-Noise Ratio yang diinginkan (Rasio sinyal terhadap derau)",
+                            en: "Desired Signal-to-Noise Ratio (SNR)"
+                        },
+                        "exposure-time-input": {
+                            id: "Lama waktu eksposur dalam detik (Durasi pengambilan gambar)",
+                            en: "Exposure time in seconds (Duration of image capture)"
+                        },
+                        "magnitude": {
+                            id: "Magnitudo bintang yang diamati (Tingkat kecerlangan bintang)",
+                            en: "Magnitude of the observed star (Brightness level)"
+                        },
+                        "filter": {
+                            id: "Filter optik yang digunakan (Jenis filter pengamatan)",
+                            en: "Optical filter used (Observation filter type)"
+                        },
+                        "sky_brightness": {
+                            id: "Kecerlangan langit malam dalam magnitudo per arcsec² (Tingkat terang langit)",
+                            en: "Night sky brightness in mag/arcsec² (Sky brightness level)"
+                        },
+                        "zenith_distance": {
+                            id: "Jarak sudut dari zenit ke objek (Sudut antara zenit dan objek)",
+                            en: "Angular distance from zenith to object (Angle between zenith and object)"
+                        },
+                        "fwhm": {
+                            id: "Full Width at Half Maximum dari bintang dalam satuan piksel (Ukuran citra bintang)",
+                            en: "Full Width at Half Maximum of star in pixels (Star image size)"
+                        }
+                    };
+                    let id = el.id || el.name;
+                    if (titles[id]) {
+                        el.setAttribute('data-bs-original-title', titles[id][lang]);
+                        // Refresh tooltip
+                        if (el._tooltip) el._tooltip.dispose();
+                        new bootstrap.Tooltip(el);
+                    }
+                });
+            }
+
+            document.getElementById('lang-id').addEventListener('click', function() {
+                setLanguage('id');
+                this.classList.replace('btn-outline-primary', 'btn-outline-secondary');
+                document.getElementById('lang-en').classList.replace('btn-outline-secondary', 'btn-outline-primary');
+            });
+            document.getElementById('lang-en').addEventListener('click', function() {
+                setLanguage('en');
+                this.classList.replace('btn-outline-primary', 'btn-outline-secondary');
+                document.getElementById('lang-id').classList.replace('btn-outline-secondary', 'btn-outline-primary');
+            });
+
+            // Set bahasa defaultnya (Inggris atau Indo)
+            setLanguage('en');
+        });
+    </script>
+</body>
+</html>

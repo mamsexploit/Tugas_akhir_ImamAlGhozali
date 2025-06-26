@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exposure Time and SNR Calculator</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1d2b64, #f8cdda);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 12px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+        }
+        .btn-primary {
+            background-color: #ff7eb3;
+            border: none;
+        }
+        .btn-primary:hover {
+            background-color: #ff5277;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card p-4">
+                    <h2 class="text-center text-dark">Exposure Time and SNR Calculator</h2>
+                    <!-- Form untuk menghitung Exposure Time -->
+                    <form action="/calculate_exposure" method="post" class="mb-4">
+                        <h4 class="text-center">Calculate Exposure Time</h4>
+                        <div class="mb-3">
+                            <label for="telescope" class="form-label">Telescope:</label>
+                            <select name="telescope" id="telescope" class="form-select" required>
+                                <option value="GSO">GSO</option>
+                                <option value="Celestron C11">Celestron C11</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="ccd" class="form-label">CCD:</label>
+                            <select name="ccd" id="ccd" class="form-select" required>
+                                <option value="ZWO ASI 178MM">ZWO ASI 178MM</option>
+                                <option value="ZWO ASI 2600 MM Pro">ZWO ASI 2600 MM Pro</option>
+                                <option value="QHY 174 GPS">QHY 174 GPS</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="filter_name" class="form-label">Filter:</label>
+                            <select name="filter_name" id="filter_name" class="form-select" required>
+                                <option value="U">U</option>
+                                <option value="B">B</option>
+                                <option value="V">V</option>
+                                <option value="R">R</option>
+                                <option value="I">I</option>
+                                <option value="Clear">Clear</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="snr_target" class="form-label">Desired SNR:</label>
+                            <input type="number" step="0.1" name="snr_target" id="snr_target" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="magnitude" class="form-label">Star Magnitude:</label>
+                            <input type="number" step="0.1" name="magnitude" id="magnitude" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="airmass" class="form-label">Airmass:</label>
+                            <input type="number" step="0.1" name="airmass" id="airmass" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="fwhm" class="form-label">FWHM (arcsec):</label>
+                            <input type="number" step="0.1" name="fwhm" id="fwhm" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="sky_brightness" class="form-label">Sky Brightness (mag/arcsec²):</label>
+                            <input type="number" step="0.1" name="sky_brightness" id="sky_brightness" class="form-control" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Calculate Exposure Time</button>
+                    </form>
+
+                    <!-- Form untuk menghitung SNR -->
+                    <form action="/calculate_snr" method="post">
+                        <h4 class="text-center">Calculate SNR</h4>
+                        <div class="mb-3">
+                            <label for="telescope" class="form-label">Telescope:</label>
+                            <select name="telescope" id="telescope" class="form-select" required>
+                                <option value="GSO">GSO</option>
+                                <option value="Celestron C11">Celestron C11</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="ccd" class="form-label">CCD:</label>
+                            <select name="ccd" id="ccd" class="form-select" required>
+                                <option value="ZWO ASI 178MM">ZWO ASI 178MM</option>
+                                <option value="ZWO ASI 2600 MM Pro">ZWO ASI 2600 MM Pro</option>
+                                <option value="QHY 174 GPS">QHY 174 GPS</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="filter_name" class="form-label">Filter:</label>
+                            <select name="filter_name" id="filter_name" class="form-select" required>
+                                <option value="U">U</option>
+                                <option value="B">B</option>
+                                <option value="V">V</option>
+                                <option value="R">R</option>
+                                <option value="I">I</option>
+                                <option value="Clear">Clear</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="magnitude" class="form-label">Star Magnitude:</label>
+                            <input type="number" step="0.1" name="magnitude" id="magnitude" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="exposure_time" class="form-label">Exposure Time (seconds):</label>
+                            <input type="number" step="0.1" name="exposure_time" id="exposure_time" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="airmass" class="form-label">Airmass:</label>
+                            <input type="number" step="0.1" name="airmass" id="airmass" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="fwhm" class="form-label">FWHM (arcsec):</label>
+                            <input type="number" step="0.1" name="fwhm" id="fwhm" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="sky_brightness" class="form-label">Sky Brightness (mag/arcsec²):</label>
+                            <input type="number" step="0.1" name="sky_brightness" id="sky_brightness" class="form-control" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Calculate SNR</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
